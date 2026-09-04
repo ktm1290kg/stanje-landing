@@ -1,0 +1,920 @@
+<!doctype html>
+<html lang="sr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+  <meta name="theme-color" content="#0a0e0c">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="STANJE">
+  <link rel="apple-touch-icon" href="https://stanje.rs/assets/stanje-pulse-s.png">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <title>STANJE — Demo</title>
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/3.34.1/tabler-icons.min.css">
+  <style>
+    :root{
+      --bg:#0a0e0c;--card:#121914;--card2:#0e1511;--line:#1f2b24;
+      --txt:#eef4f0;--muted:#7e9086;--muted2:#a3b8ab;
+      --green:#2fd27d;--green-d:#052e1b;--green-l:#6ee7a8;
+      --lime:#baff29;--lime-d:#1b2400;
+      --amber:#ef9f27;--amber-bg:#6b4009;--amber-l:#fac775;
+      --blue:#5b8af5;--blue-bg:#1d3e8a;--blue-l:#b5c9f4;
+      --red:#e24b4a;--red-l:#f09595;--teal-bg:#0f6e56;--teal-l:#9fe1cb;
+      --grad:linear-gradient(135deg,#2fd27d 0%,#57e598 100%);
+    }
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+    body{margin:0;background:var(--bg);-webkit-text-size-adjust:100%;text-size-adjust:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;color:var(--txt)}
+    .app{max-width:440px;margin:auto;padding:14px 14px 40px}
+    .hidden{display:none!important}
+
+    .login-card{background:var(--card);border-radius:16px;padding:22px;margin-top:40px}
+    .login-card h1{margin:0 0 4px;font-size:22px;font-weight:600}
+    .login-card p{margin:0 0 18px;color:var(--muted);font-size:13px}
+    label{display:block;font-weight:600;font-size:12px;margin:14px 0 6px;color:var(--muted2)}
+    input,select,textarea{width:100%;padding:13px;border:1px solid var(--line);border-radius:12px;font-size:16px;background:var(--card2);color:var(--txt)}
+    input::placeholder,textarea::placeholder{color:#5f6f66}
+    textarea{min-height:90px;resize:vertical}
+    input:focus,select:focus,textarea:focus{outline:none;border-color:var(--green)}
+
+    .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding:2px}
+    .top .title{font-size:19px;font-weight:600}
+    .top .sub{color:var(--muted);font-size:12px;margin-top:1px}
+    .avatar{width:38px;height:38px;border-radius:50%;background:var(--green);color:var(--green-d);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;flex-shrink:0}
+    .avatar.owner{background:var(--blue);color:#042c53}
+    .refresh-btn{width:38px;height:38px;border-radius:50%;background:var(--card2);border:1px solid var(--line);color:var(--txt);display:flex;align-items:center;justify-content:center;font-size:19px;cursor:pointer;flex-shrink:0}
+    .refresh-btn:active{background:var(--green);color:var(--green-d)}
+    .refresh-btn.spin i{animation:kpspin .6s linear}
+    @keyframes kpspin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+
+    .tabs{display:flex;gap:6px;margin-bottom:14px}
+    .tab{flex:1;text-align:center;background:var(--card2);color:var(--muted2);font-size:13px;padding:9px 0;border-radius:10px;cursor:pointer;border:1px solid transparent}
+    .tab.active{background:var(--green);color:var(--green-d);font-weight:600}
+
+    .stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+    .stat{background:var(--card);border-radius:14px;padding:14px}
+    .stat .lbl{color:var(--muted);font-size:12px;margin-bottom:4px}
+    .stat .big{font-size:23px;font-weight:600}
+    .stat .sm{font-size:13px;color:var(--green-l);margin-top:2px}
+
+    .voice-btn{width:100%;background:var(--green);color:var(--green-d);border:0;border-radius:14px;padding:16px;font-size:17px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:9px;margin-bottom:18px}
+    .voice-btn.recording{background:var(--red);color:#fff;animation:pulse 1s infinite}
+    @keyframes pulse{50%{opacity:.72}}
+    .voice-btn i{font-size:21px}
+
+    .sec-title{color:var(--muted2);font-size:13px;font-weight:600;margin:0 0 9px;display:flex;justify-content:space-between;align-items:center}
+    .item{background:var(--card);border-radius:12px;padding:11px 12px;margin-bottom:7px;display:flex;align-items:center;gap:10px}
+    .item .ico{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .item .ico i{font-size:16px}
+    .ico.sale{background:var(--teal-bg);color:var(--teal-l)}
+    .ico.complaint{background:var(--amber-bg);color:var(--amber-l)}
+    .ico.purchase{background:var(--blue-bg);color:var(--blue-l)}
+    .item .mid{flex:1;min-width:0}
+    .item .name{font-size:14px;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .item .meta{color:var(--muted);font-size:12px;margin-top:1px}
+    .item .amt{font-size:14px;font-weight:600;text-align:right;flex-shrink:0}
+    .amt.pos{color:var(--green-l)}.amt.neg{color:var(--red-l)}.amt.neutral{color:var(--muted2)}
+    .amt .eur{display:block;font-size:11px;color:var(--muted);font-weight:400}
+    .empty{text-align:center;color:var(--muted);font-size:13px;padding:26px 0}
+
+    .card{background:var(--card);border-radius:16px;padding:16px;margin-bottom:14px}
+    .card h3{margin:0 0 12px;font-size:16px;font-weight:600}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .buttons{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+    button.act{border:0;border-radius:12px;padding:14px 16px;font-size:15px;font-weight:600;cursor:pointer}
+    .primary{background:var(--green);color:var(--green-d);flex:1}
+    .ghost{background:var(--card2);color:var(--muted2);border:1px solid var(--line)!important}
+    .status{display:none;padding:12px;border-radius:12px;margin-top:12px;font-size:14px}
+    .ok{display:block;background:rgba(29,158,117,.15);color:var(--green-l)}
+    .warn{display:block;background:rgba(239,159,39,.15);color:var(--amber-l)}
+    .error{display:block;background:rgba(226,75,74,.15);color:var(--red-l)}
+    .review{border:2px solid var(--amber)}
+    .small{font-size:12px;color:var(--muted)}
+    .grid-btn{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+    .gbtn{background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:12px 10px;color:var(--txt);font-size:14px;font-weight:500;cursor:pointer;text-align:center;min-height:72px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}
+    .gbtn:active{background:var(--green);color:var(--green-d)}
+    .gbtn .emo{font-size:24px;line-height:1;margin-bottom:2px}
+    .gbtn .cena{font-size:12px;color:var(--muted);line-height:1.4}
+    .gbtn .eurmali{font-size:11px;color:var(--green-l)}
+    .gbtn.kat{background:var(--teal-bg);color:var(--teal-l);border-color:var(--teal-bg);font-weight:600}
+    /* ---- PREGLED MESECA ---- */
+    .pg-nav{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
+    .pg-title{font-size:18px;font-weight:700;text-align:center;flex:1}
+    .pg-arrow{width:40px;height:40px;flex-shrink:0;background:var(--card2);border:1px solid var(--line);border-radius:10px;color:var(--txt);font-size:22px;line-height:1;cursor:pointer}
+    .pg-arrow:disabled{opacity:.3;cursor:default}
+    .pg-tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+    .pg-tile{background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:12px}
+    .pg-tile .lab{font-size:12px;color:var(--muted);margin-bottom:4px}
+    .pg-tile .big{font-size:22px;font-weight:700;line-height:1.1}
+    .pg-tile .eur{font-size:12px;color:var(--muted2);margin-top:2px}
+    .pg-tile.green .big{color:var(--green-l)}
+    .pg-donutwrap{display:flex;justify-content:center;margin:6px 0 14px}
+    .pg-legend{display:flex;flex-direction:column;gap:7px;margin-bottom:14px}
+    .pg-leg{display:flex;align-items:center;gap:8px;font-size:13px}
+    .pg-leg .dot{width:11px;height:11px;border-radius:3px;flex-shrink:0}
+    .pg-leg .nm{color:var(--muted2);flex:1}
+    .pg-leg .vl{font-weight:600}
+    .pg-bar{margin-bottom:9px}
+    .pg-bar .top{display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px}
+    .pg-bar .top .vl{font-weight:600}
+    .pg-track{height:8px;background:var(--card2);border-radius:6px;overflow:hidden}
+    .pg-fill{height:100%;border-radius:6px;background:var(--amber)}
+    /* ---- STANJE LAGERA ---- */
+    .st-row{display:flex;align-items:center;gap:10px;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:9px 11px;margin-bottom:7px}
+    .st-row .nm{flex:1;min-width:0;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .st-row .gr{display:block;font-size:11px;color:var(--muted)}
+    .st-row input{width:72px;padding:8px;text-align:center;font-size:15px;flex-shrink:0}
+    .st-row .kom{font-size:18px;font-weight:700;min-width:52px;text-align:right;flex-shrink:0}
+    .st-row.minus .kom{color:var(--red-l)}
+    .st-row.nula .kom{color:var(--muted)}
+    .st-row.ima .kom{color:var(--green-l)}
+    .stabs{display:flex;gap:6px;overflow-x:auto;margin-bottom:12px;padding-bottom:2px}
+    .stab{flex:0 0 auto;background:var(--card2);color:var(--muted2);font-size:12px;padding:8px 12px;border-radius:9px;cursor:pointer;white-space:nowrap;border:1px solid var(--line)}
+    .stab.active{background:var(--green);color:var(--green-d);font-weight:600;border-color:var(--green)}
+    .eurline{display:none;color:var(--green-l);font-size:12px;margin:-4px 0 10px;padding:0 2px}
+    .link{color:var(--muted);font-size:12px;background:none;border:0;cursor:pointer;text-decoration:underline}
+    @media(max-width:520px){.row{grid-template-columns:1fr}}
+    /* ═══════════ REDIZAJN (staging): stranice, zaglavlja, dugmad ═══════════ */
+    body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif}
+    .card{border:1px solid var(--line);border-radius:18px}
+    input,select,textarea{border-radius:13px}
+    .status{border-radius:13px}
+    .act{border-radius:13px}
+    .primary{background:var(--grad);color:#04240f;box-shadow:0 6px 18px rgba(47,210,125,.22)}
+    .act.lime{background:var(--lime);color:var(--lime-d)}
+    .st-row{border-radius:13px}
+
+    /* — cela stranica po sekciji — */
+    #main.view-open > :not(.card.page){display:none!important}
+    .card.page{background:transparent;border:0;padding:0;margin:0}
+    .card.page > h3{display:none}
+    .card.page > h3#brziNaslov,.card.page > h3#potvrdaNaziv,.card.page > h3#ispNaziv,.card.page > h3#trosakNaslov,.card.page > h3#irNaslov{display:block;font-size:17px;font-weight:700;margin:2px 0 12px}
+    .card.page > h3#brziNaslov{font-size:15px;font-weight:600;color:var(--muted2)}
+    .page-head{margin:0 0 16px}
+    .ph-back{display:inline-flex;align-items:center;gap:2px;background:none;border:0;color:var(--muted2);font-size:14px;font-weight:600;padding:4px 0;margin-bottom:12px;cursor:pointer}
+    .ph-back i{font-size:18px}
+    .ph-row{display:flex;align-items:center;gap:12px}
+    .ph-ico{width:44px;height:44px;border-radius:13px;background:var(--card);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .ph-ico i{font-size:22px;color:var(--green-l)}
+    .ph-n{display:block;font-size:20px;font-weight:700;letter-spacing:-.2px}
+    .ph-s{display:block;font-size:12.5px;color:var(--muted);margin-top:1px}
+
+    /* — dugmad na početnoj kao redovi sa ikonom — */
+    .voice-btn{justify-content:flex-start;background:var(--card);border:1px solid var(--line);color:var(--txt);font-size:16px;border-radius:16px;padding:13px 14px;margin-bottom:10px;position:relative}
+    .voice-btn i{width:40px;height:40px;font-size:20px;border-radius:12px;background:rgba(47,210,125,.12);color:var(--green-l);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .voice-btn::after{content:'\203A';position:absolute;right:16px;color:var(--muted);font-size:20px;font-weight:400}
+    .voice-btn:active{border-color:var(--green)}
+    /* boje po dugmetu (kao mockup: obojen tekst + ikona + tanka obojena ivica) */
+    #brziBtn{border-color:rgba(47,210,125,.45);color:var(--green-l)}
+    #brziBtn i{background:rgba(47,210,125,.14);color:var(--green-l)}
+    #pregledBtn{border-color:rgba(159,225,203,.3);color:var(--teal-l)}
+    #pregledBtn i{background:rgba(15,110,86,.3);color:var(--teal-l)}
+    #troskoviBtn{border-color:rgba(239,159,39,.4);color:var(--amber-l)}
+    #troskoviBtn i{background:rgba(239,159,39,.13);color:var(--amber-l)}
+    #reklamacijaBtn{border-color:rgba(226,75,74,.4);color:var(--red-l)}
+    #reklamacijaBtn i{background:rgba(226,75,74,.13);color:var(--red-l)}
+    #stanjeBtn{color:var(--txt)}
+    #stanjeBtn i{background:rgba(159,225,203,.12);color:var(--teal-l)}
+    #artikalBtn{border-color:rgba(110,231,168,.35);color:var(--green-l)}
+    #artikalBtn i{background:rgba(110,231,168,.12);color:var(--green-l)}
+    #kaparaBtn{border-color:rgba(91,138,245,.4);color:var(--blue-l)}
+    #kaparaBtn i{background:rgba(91,138,245,.14);color:var(--blue-l)}
+    #povratBtn{color:var(--muted2)}
+    #povratBtn i{background:rgba(163,184,171,.1);color:var(--muted2)}
+    #racuniBtn{border-color:rgba(186,255,41,.4);color:var(--lime)}
+    #racuniBtn i{background:rgba(186,255,41,.12);color:var(--lime)}
+    #podesavanjaBtn{color:var(--muted2)}
+    #podesavanjaBtn i{background:rgba(163,184,171,.1);color:var(--muted2)}
+
+    /* pregled meseca — izbor perioda (izgleda kao naslov) */
+    .pg-period{flex:1;background:var(--card) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236ee7a8' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 14px center;border:1px solid rgba(47,210,125,.35);border-radius:12px;
+      text-align:center;font-size:16px;font-weight:700;color:var(--txt);padding:10px 26px 10px 8px;
+      -webkit-appearance:none;appearance:none}
+    /* pregled meseca — hero, grafikon, profit traka, rang lista */
+    .hero-tile{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:10px}
+    .hero-tile .lab{font-size:12px;color:var(--muted);margin-bottom:4px}
+    .hero-big{font-size:30px;font-weight:800;letter-spacing:-.5px;line-height:1.05}
+    .hero-sub{font-size:12.5px;color:var(--green-l);margin-top:4px}
+    .chart{display:flex;align-items:flex-end;gap:5px;height:74px;margin-top:16px}
+    .chart .bar{flex:1;min-width:4px;border-radius:5px 5px 2px 2px;background:var(--grad);opacity:.9}
+    .profit-row{display:flex;align-items:center;justify-content:space-between;background:rgba(47,210,125,.09);border:1px solid rgba(47,210,125,.25);border-radius:14px;padding:13px 15px;margin:10px 0 14px}
+    .profit-row span{font-size:13px;color:var(--muted2)}
+    .profit-row b{font-size:16.5px;color:var(--green-l)}
+    .kartica-sekcija{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px;margin-top:14px}
+    .rang{display:flex;align-items:center;gap:11px;padding:10px 2px;border-bottom:1px solid var(--line)}
+    .rang:last-child{border-bottom:0}
+    .rang .rb{width:26px;height:26px;border-radius:8px;background:rgba(47,210,125,.13);color:var(--green-l);font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .rang .rn{flex:1;min-width:0;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .rang .rv{text-align:right;flex-shrink:0}
+    .rang .rv b{display:block;font-size:14px}
+    .rang .rv span{display:block;font-size:11.5px;color:var(--muted)}
+
+    /* kapara — velika kartica */
+    .kap-card{background:rgba(91,138,245,.08);border:1px solid rgba(91,138,245,.35);border-radius:16px;padding:15px;margin-bottom:10px}
+    .kap-card .kl{font-size:11px;letter-spacing:1px;color:var(--blue-l);font-weight:700;margin-bottom:6px}
+    .kap-card .kn{font-size:15.5px;font-weight:700}
+    .kap-card .ki{font-size:24px;font-weight:800;color:var(--blue-l);margin:6px 0 2px}
+    .kap-card .kk{font-size:12.5px;color:var(--muted2)}
+    .kap-card .kx{margin-top:10px}
+
+    /* povrat — koraci */
+    .koraci{margin-bottom:14px}
+    .korak{display:flex;align-items:center;gap:11px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:8px;color:var(--muted2)}
+    .korak .kb{width:26px;height:26px;border-radius:50%;background:var(--card2);border:1px solid var(--line);font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .korak.aktivan{border-color:rgba(47,210,125,.45);color:var(--txt)}
+    .korak.aktivan .kb{background:rgba(47,210,125,.15);border-color:transparent;color:var(--green-l)}
+    .korak.gotov .kb{background:var(--grad);border:0;color:#04240f}
+
+    .home-sec{font-size:11.5px;letter-spacing:1.4px;font-weight:700;color:var(--muted);margin:16px 2px 8px;text-transform:uppercase}
+    #p_ukupno{display:block!important;margin:14px 0 2px}
+    #p_ukupno .uk-l{display:block;font-size:12px;color:var(--muted)}
+    #p_ukupno .uk-b{display:block;font-size:26px;font-weight:800;color:var(--txt);line-height:1.15}
+    #p_ukupno .uk-e{display:block;font-size:12.5px;color:var(--green-l)}
+    .rang .rb.dan{background:var(--card2);color:var(--muted2);border:1px solid var(--line)}
+    /* toast — brza vesela potvrda prodaje (ne prekida unos) */
+    .toast{position:fixed;top:40px;left:50%;transform:translateX(-50%) translateY(-16px);z-index:99;
+      background:var(--grad);color:#04240f;border-radius:15px;padding:12px 18px;min-width:230px;max-width:88vw;
+      box-shadow:0 12px 34px rgba(47,210,125,.35);display:flex;align-items:center;gap:11px;
+      opacity:0;pointer-events:none;transition:all .28s cubic-bezier(.2,1.4,.4,1)}
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+    .toast .tico{width:30px;height:30px;border-radius:50%;background:rgba(4,36,15,.18);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;flex-shrink:0}
+    .toast b{display:block;font-size:15px;line-height:1.15}
+    .toast.err{background:linear-gradient(135deg,#e24b4a 0%,#f06e63 100%);color:#2b0505;box-shadow:0 12px 34px rgba(226,75,74,.4)}
+    .toast.err .tico{background:rgba(43,5,5,.18)}
+    .toast .ts{display:block;font-size:12.5px;opacity:.75;margin-top:1px}
+
+    /* — brzi unos: artikli kao lista sa lagerom — */
+    #artikliLista.grid-btn,#bezKatLista.grid-btn{display:block}
+    .art-row{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px 14px;margin-bottom:8px;cursor:pointer}
+    .art-row:active{border-color:var(--green)}
+    .art-row .an{flex:1;min-width:0}
+    .art-row .an .t{font-size:15px;font-weight:600}
+    .art-row .an .l{font-size:12px;color:var(--muted);margin-top:2px}
+    .art-row .an .l.malo{color:var(--amber-l)}
+    .art-row .ac{font-size:15px;font-weight:700;color:var(--txt);white-space:nowrap}
+    .art-row .krug{width:22px;height:22px;border-radius:50%;border:2px solid var(--line);flex-shrink:0}
+
+    /* — lager traka — */
+    .lager-track{height:4px;border-radius:3px;background:var(--line);margin-top:8px;overflow:hidden}
+    .lager-fill{height:100%;border-radius:3px;background:var(--grad)}
+    .lager-fill.malo{background:var(--amber)}
+
+    /* — skener: okvir sa uglovima — */
+    .sken-okvir{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:66%;aspect-ratio:1;pointer-events:none}
+    .sken-okvir::before,.sken-okvir::after,.sken-okvir b::before,.sken-okvir b::after{content:'';position:absolute;width:26px;height:26px;border:3px solid var(--lime);border-radius:2px}
+    .sken-okvir::before{top:0;left:0;border-right:0;border-bottom:0}
+    .sken-okvir::after{top:0;right:0;border-left:0;border-bottom:0}
+    .sken-okvir b::before{bottom:0;left:0;border-right:0;border-top:0}
+    .sken-okvir b::after{bottom:0;right:0;border-left:0;border-top:0}
+  </style>
+</head>
+<body>
+<div style="position:fixed;top:8px;right:8px;z-index:50;background:var(--lime);color:#0b1400;font-weight:700;font-size:11px;letter-spacing:.5px;padding:4px 10px;border-radius:20px;box-shadow:0 2px 8px rgba(0,0,0,.4)">DEMO</div>
+<div class="toast" id="toast"><span class="tico">✓</span><div><b id="toastN"></b><span class="ts" id="toastS"></span></div></div>
+<div class="app">
+
+  <div class="login-card" id="loginCard">
+    <h1>STANJE</h1>
+    <p>Prodaja, lager, troškovi i računi — iz džepa.</p>
+    <label>Šifra</label>
+    <input id="pin" type="password" inputmode="numeric" placeholder="Unesi bilo koju šifru" onkeydown="if(event.key==='Enter')login()">
+    <button class="act primary" style="width:100%;margin-top:16px" onclick="login()">Otvori demo</button>
+    <div class="small" style="margin-top:12px;color:var(--muted)">Demo sa izmišljenim artiklima i brojkama. Svaka šifra otvara program.</div>
+    <div id="loginStatus" class="status"></div>
+  </div>
+
+  <div id="main" class="hidden">
+
+    <div class="top">
+      <div>
+        <div class="title">STANJE</div>
+        <div class="sub" id="greeting"></div>
+      </div>
+      <button class="refresh-btn" id="refreshBtn" onclick="osveziApp(this)" title="Osveži">
+        <i class="ti ti-refresh"></i>
+      </button>
+    </div>
+
+    <div id="dashboard">
+      <div class="tabs">
+        <div class="tab active" data-days="1" onclick="setPeriod(1,this)">Danas</div>
+        <div class="tab" data-days="0" onclick="setPeriod(0,this)">Ovaj mesec</div>
+      </div>
+
+      <div class="stats">
+        <div class="stat">
+          <div class="lbl">Prodaja</div>
+          <div class="big" id="statCount">–</div>
+          <div class="sm" id="statCountSub"></div>
+        </div>
+        <div class="stat">
+          <div class="lbl">Promet</div>
+          <div class="big" id="statSum">–</div>
+          <div class="sm" id="statSumEur"></div>
+        </div>
+      </div>
+      <div class="home-sec">Prodaja</div>
+
+      <button class="voice-btn" id="brziBtn" onclick="otvoriBrzi()">
+        <i class="ti ti-layout-grid"></i> Brzi unos (artikli)
+      </button>
+
+      <button class="voice-btn" id="kaparaBtn" onclick="otvoriKapare()">
+        <i class="ti ti-cash"></i> Kapara
+      </button>
+
+      <button class="voice-btn" id="povratBtn" onclick="otvoriPovrat()">
+        <i class="ti ti-arrow-back-up"></i> Povrat artikla
+      </button>
+
+      <button class="voice-btn" id="reklamacijaBtn" onclick="otvoriReklamaciju()">
+        <i class="ti ti-tool"></i> Reklamacija
+      </button>
+      <div class="home-sec">Pregled i lager</div>
+
+      <button class="voice-btn" id="pregledBtn" data-owner onclick="otvoriPregled()">
+        <i class="ti ti-chart-donut"></i> Pregled meseca
+      </button>
+
+      <button class="voice-btn" id="stanjeBtn" onclick="otvoriStanje()">
+        <i class="ti ti-packages"></i> Stanje lagera
+      </button>
+
+      <button class="voice-btn" id="artikalBtn" data-owner onclick="otvoriArtikal()">
+        <i class="ti ti-plus"></i> Novi artikal
+      </button>
+      <div class="home-sec">Finansije</div>
+
+      <button class="voice-btn" id="troskoviBtn" data-owner onclick="otvoriTroskove()">
+        <i class="ti ti-receipt"></i> Trošak / uplata
+      </button>
+
+      <button class="voice-btn" id="racuniBtn" data-owner onclick="otvoriRacuni()">
+        <i class="ti ti-receipt-2"></i> Računi <span id="racuniPendingBadge" class="hidden" style="margin-left:6px;font-size:12px;color:var(--amber-l)"></span>
+      </button>
+
+      <button class="voice-btn" id="podesavanjaBtn" data-owner onclick="otvoriPodesavanja()">
+        <i class="ti ti-settings"></i> Podešavanja
+      </button>
+
+      <div class="sec-title">
+        <span>Poslednji unosi</span>
+        <span class="small" id="histRange"></span>
+      </div>
+      <div id="historyList"></div>
+      <div id="dashStatus" class="status"></div>
+    </div>
+
+    <!-- BRZI UNOS: kategorije i artikli -->
+    <div class="card hidden" id="brziUnos">
+      <h3 id="brziNaslov">Izaberi kategoriju</h3>
+      <div id="kategorijeLista" class="grid-btn"></div>
+      <div id="artikliLista" class="grid-btn hidden"></div>
+      <div id="bezKategorije">
+        <div class="sec-title" style="margin-top:14px">Ostali artikli</div>
+        <div id="bezKatLista" class="grid-btn"></div>
+      </div>
+      <div class="buttons">
+        <button class="act ghost" id="nazadBtn" onclick="nazadNaKategorije()" style="display:none">← Nazad na kategorije</button>
+      </div>
+    </div>
+
+    <!-- POTVRDA ARTIKLA -->
+    <div class="card hidden" id="potvrdaCard">
+      <h3 id="potvrdaNaziv">Artikal</h3>
+      <div class="row">
+        <div><label>Količina</label><input type="number" id="p_kolicina" value="1"></div>
+        <div><label>Cena/kom. RSD</label><input type="text" inputmode="decimal" id="p_cena"></div>
+      </div>
+      <div id="p_ukupno" class="eurline" style="display:block"></div>
+      <label>Plaćanje</label><select id="p_placanje"></select>
+      <label>Isporuka <span style="color:var(--red-l)">*</span></label>
+      <select id="p_isporuka" onchange="osveziUkupno()">
+        <option value="" selected>— izaberi način isporuke —</option>
+        <option value="Licno">Lično preuzimanje</option>
+        <option value="Aks">Aksom (brza pošta)</option>
+      </select>
+      <div id="p_postarina" class="eurline" style="display:none"></div>
+      <label>Napomena</label><input id="p_napomena" placeholder="neobavezno">
+      <div class="buttons">
+        <button class="act primary" onclick="potvrdiArtikal()">Unesi prodaju</button>
+        <button class="act ghost" onclick="otkaziPotvrdu()">Nazad</button>
+      </div>
+      <div id="potvrdaStatus" class="status"></div>
+    </div>
+
+    <!-- ISPRAVKA UNOSA -->
+    <div class="card hidden" id="ispravkaCard">
+      <h3 id="ispNaziv">Ispravka unosa</h3>
+      <div class="small" id="ispInfo" style="margin-bottom:10px"></div>
+      <div class="row">
+        <div><label>Količina</label><input type="number" id="i_kolicina"></div>
+        <div><label>Cena/kom. RSD</label><input type="text" inputmode="decimal" id="i_cena"></div>
+      </div>
+      <div id="i_ukupno" class="eurline" style="display:block"></div>
+      <label>Plaćanje</label><select id="i_placanje"></select>
+      <label>Napomena</label><input id="i_napomena">
+      <div class="buttons">
+        <button class="act primary" onclick="sacuvajIspravku()">Sačuvaj izmenu</button>
+        <button class="act ghost" onclick="zatvoriIspravku()">Odustani</button>
+      </div>
+      <div class="buttons" style="margin-top:6px">
+        <button class="act ghost" style="color:var(--red-l);border-color:var(--red)!important;flex:1" onclick="obrisiUnos()">Obriši ovaj unos</button>
+      </div>
+      <div id="ispStatus" class="status"></div>
+    </div>
+
+    <!-- TROŠKOVI: kategorije -->
+    <div class="card hidden" id="troskoviUnos" data-owner>
+      <h3>Izaberi vrstu troška</h3>
+      <div id="katTroskovaLista" class="grid-btn"></div>
+      
+    </div>
+
+    <!-- TROŠAK: potvrda -->
+    <div class="card hidden" id="trosakCard" data-owner>
+      <h3 id="trosakNaslov">Trošak</h3>
+      <div class="row">
+        <div><label>Iznos EUR</label><input type="text" inputmode="decimal" id="t_eur" placeholder="npr. 425"></div>
+        <div><label>Iznos RSD</label><input type="text" inputmode="decimal" id="t_rsd" placeholder="npr. 50.000"></div>
+      </div>
+      <div class="small" style="margin:-4px 0 10px;color:var(--muted)">Upiši u jedno polje — drugo se samo popuni.</div>
+      <label>Opis</label>
+      <input id="t_opis" placeholder="npr. kredit za 10 dana">
+      <label>Kome plaćeno</label>
+      <input id="t_kome" placeholder="neobavezno">
+      <label>Plaćanje</label><select id="t_placanje"></select>
+      <div class="buttons">
+        <button class="act primary" onclick="sacuvajTrosak()">Sačuvaj trošak</button>
+        <button class="act ghost" onclick="nazadNaKatTroskova()">Nazad</button>
+      </div>
+      <div id="trosakStatus" class="status"></div>
+    </div>
+
+    <!-- REKLAMACIJA: artikal → kvar → trošak -->
+    <div class="card hidden" id="reklamacijaCard">
+      <h3>Reklamacija</h3>
+      <label>Proizvod</label>
+      <select id="rk_proizvod"></select>
+      <label>Vrsta kvara</label>
+      <select id="rk_vrsta"></select>
+      <label>Opis kvara</label>
+      <textarea id="rk_opis" placeholder="npr. ne pali, zamenjen karburator" style="min-height:64px"></textarea>
+      <div class="sec-title" style="margin-top:12px">Koliko nas je koštalo</div>
+      <div class="row">
+        <div><label>Deo RSD</label><input type="text" inputmode="decimal" id="rk_deo"></div>
+        <div><label>Rad RSD</label><input type="text" inputmode="decimal" id="rk_rad"></div>
+      </div>
+      <div class="row">
+        <div><label>Poštarina RSD</label><input type="text" inputmode="decimal" id="rk_postarina"></div>
+        <div><label>Povraćaj kupcu RSD</label><input type="text" inputmode="decimal" id="rk_povracaj"></div>
+      </div>
+      <div id="rk_ukupno" class="eurline" style="display:block"></div>
+      <label>Status</label><select id="rk_status"></select>
+      <label>Napomena</label><input id="rk_napomena" placeholder="neobavezno">
+      <div class="buttons">
+        <button class="act primary" onclick="sacuvajReklamaciju()">Sačuvaj reklamaciju</button>
+      </div>
+      <div id="rkStatus" class="status"></div>
+    </div>
+
+    <!-- STANJE LAGERA -->
+    <div class="card hidden" id="stanjeCard">
+      <h3>Stanje lagera</h3>
+      <div class="small" id="stObjasnjenje" style="color:var(--muted);margin-bottom:10px"></div>
+      <input id="st_pretraga" placeholder="Pretraži artikal..." oninput="renderStanje()" style="margin-bottom:10px">
+      <div id="stLista"></div>
+      <div class="buttons" id="stAkcije">
+        <button class="act primary" data-owner onclick="sacuvajStanje()">Sačuvaj stanje</button>
+      </div>
+      <div id="stStatus" class="status"></div>
+    </div>
+
+    <!-- NOVI ARTIKAL (samo vlasnik) -->
+    <div class="card hidden" id="artikalCard">
+      <h3>Novi artikal</h3>
+      <div class="small" style="color:var(--muted);margin-bottom:10px">
+        Dodaje nov artikal u katalog. Odmah je dostupan za prodaju, stanje i pregled.
+      </div>
+      <label>Šifra artikla (SKU)</label>
+      <input id="ar_sku" placeholder="npr. GUMA-16 · mora biti jedinstvena">
+      <label>Naziv</label>
+      <input id="ar_naziv" placeholder="npr. Guma prednja 16 inča">
+      <label>Grupa</label>
+      <select id="ar_grupa" onchange="artikalGrupaPromena()"></select>
+      <input id="ar_grupaNova" class="hidden" style="margin-top:8px" placeholder="Upiši naziv nove grupe">
+      <div class="small" id="ar_kursHint" style="color:var(--muted);margin:12px 0 2px"></div>
+      <div class="row">
+        <div><label>Nabavna EUR</label><input type="text" inputmode="decimal" id="ar_nabavnaEur" oninput="arNabavnaIzEur()" placeholder="€"></div>
+        <div><label>Nabavna RSD</label><input type="text" inputmode="decimal" id="ar_nabavnaRsd" oninput="arNabavnaIzRsd()" placeholder="din"></div>
+      </div>
+      <div class="row">
+        <div><label>Prodajna EUR</label><input type="text" inputmode="decimal" id="ar_prodajnaEur" oninput="arProdajnaIzEur()" placeholder="€"></div>
+        <div><label>Prodajna RSD</label><input type="text" inputmode="decimal" id="ar_prodajnaRsd" oninput="arProdajnaIzRsd()" placeholder="din"></div>
+      </div>
+      <div class="row">
+        <div><label>Početno stanje (kom)</label><input type="text" inputmode="numeric" id="ar_stanje" placeholder="0"></div>
+        <div><label>Poštarina RSD</label><input type="text" inputmode="decimal" id="ar_postarina" placeholder="neobavezno"></div>
+      </div>
+      <label>Garancija (dana)</label>
+      <input type="text" inputmode="numeric" id="ar_garancija" placeholder="neobavezno">
+      <div class="buttons">
+        <button class="act primary" onclick="sacuvajArtikal()">Sačuvaj artikal</button>
+      </div>
+      <div id="arStatus" class="status"></div>
+    </div>
+
+    <!-- PODEŠAVANJA (samo vlasnik) -->
+    <div class="card hidden" id="podesavanjaCard">
+      <h3>Podešavanja</h3>
+
+      <label>Kurs — koliko RSD za 1 EUR</label>
+      <input type="text" inputmode="decimal" id="ps_kurs" placeholder="npr. 117.5">
+      <div class="small" style="color:var(--muted);margin-top:6px">
+        Ovaj kurs se koristi za preračun cena artikala i prikaz u €.
+      </div>
+      <div class="buttons">
+        <button class="act primary" onclick="sacuvajKurs()">Sačuvaj kurs</button>
+      </div>
+      <div id="psStatus" class="status"></div>
+
+      <div class="sec-title" style="margin-top:20px">Podaci firme</div>
+      <div class="small" style="color:var(--muted);margin-bottom:8px">
+        Koriste se za proveru da li je fiskalni račun izdat na vašu firmu i za slanje knjigovođi.
+      </div>
+      <label>Naziv firme</label>
+      <input id="ps_nazivFirme" placeholder="npr. Moto delovi doo">
+      <div class="row">
+        <div><label>PIB (9 cifara)</label><input type="text" inputmode="numeric" id="ps_pib" oninput="pibHint()" placeholder="9 cifara"></div>
+        <div><label>Matični broj</label><input type="text" inputmode="numeric" id="ps_maticni" placeholder="neobavezno"></div>
+      </div>
+      <div id="ps_pibHint" class="small" style="margin-top:2px"></div>
+      <div class="row">
+        <div><label>Ulica i broj</label><input id="ps_ulica" placeholder="npr. Kralja Petra 12"></div>
+        <div><label>Grad</label><input id="ps_grad" placeholder="npr. Kragujevac"></div>
+      </div>
+      <div class="row">
+        <div><label>Email firme</label><input type="text" inputmode="email" id="ps_email" placeholder="neobavezno"></div>
+        <div><label>Telefon</label><input type="text" inputmode="tel" id="ps_telefon" placeholder="neobavezno"></div>
+      </div>
+
+      <div class="sec-title" style="margin-top:20px">Knjigovođa</div>
+      <div class="small" style="color:var(--muted);margin-bottom:8px">
+        Ovde unosite email knjigovođe kome se šalju računi.
+      </div>
+      <div class="row">
+        <div><label>Ime / naziv</label><input id="ps_knjIme" placeholder="npr. Agencija Knjiga"></div>
+        <div><label>Email knjigovođe</label><input type="text" inputmode="email" id="ps_knjEmail" placeholder="knjigovodja@email.com"></div>
+      </div>
+      <label>Slanje računa knjigovođi</label>
+      <select id="ps_slanjeMod" onchange="slanjeModPromena()">
+        <option value="podsetnik">Podsetnik — ja šaljem ručno</option>
+        <option value="auto">Automatski — 1. u mesecu</option>
+      </select>
+      <div id="ps_autoHint" class="small hidden" style="color:var(--amber-l);margin-top:6px">
+        Za automatsko slanje: jednom pokreni funkciju „postaviAutomatskoSlanje" u Apps Script uređivaču (odobri dozvolu). Posle toga ide samo 1. u mesecu.
+      </div>
+
+      <div class="sec-title" style="margin-top:20px">STAGING test</div>
+      <label>Test imejl (staging slanje)</label>
+      <input type="text" inputmode="email" id="ps_stagingEmail" placeholder="tvoj@imejl — sva slanja idu samo ovde">
+      <div class="small" style="color:var(--muted);margin-top:4px">Na staging-u se računi šalju isključivo na ovaj imejl (nikad pravom knjigovođi). Ako je prazno, slanje je blokirano.</div>
+
+      <div class="buttons" style="margin-top:14px">
+        <button class="act primary" onclick="sacuvajFirmu()">Sačuvaj podatke firme</button>
+      </div>
+      <div id="psFirmaStatus" class="status"></div>
+    </div>
+
+    <!-- RAČUNI — početni ekran modula -->
+    <div class="card hidden" id="racuniCard">
+      <h3>Računi</h3>
+      <button class="act lime" style="width:100%" onclick="otvoriSken()">
+        <i class="ti ti-scan"></i> Skeniraj račun
+      </button>
+      <button class="act ghost" style="width:100%;margin-top:8px;color:var(--blue-l);border-color:var(--blue)!important" onclick="demoUbaciRacun()">
+        <i class="ti ti-flask"></i> Demo: ubaci primer računa
+      </button>
+      <div id="racuniPending" class="hidden" style="margin-top:12px"></div>
+      <div id="racuniSlanje" class="hidden" style="margin-top:12px"></div>
+      <div id="racuniPregled" class="hidden" style="margin-top:14px"></div>
+      <div id="racuniFilteri" class="hidden" style="margin-top:12px">
+        <div style="display:flex;gap:8px">
+          <select id="racMesec" onchange="racMesecPromena()" style="flex:1"></select>
+          <input id="racPretraga" placeholder="Pretraga prodavca..." oninput="renderRacuniUI()" style="flex:1">
+        </div>
+        <div id="racChips" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"></div>
+      </div>
+      <div id="racuniLista" style="margin-top:14px"></div>
+      
+    </div>
+
+    <!-- SLANJE KNJIGOVOĐI (pregled pre slanja) -->
+    <div class="card hidden" id="posaljiCard">
+      <h3>Slanje knjigovođi</h3>
+      <div id="poSadrzaj"></div>
+      <div class="buttons" style="margin-top:14px">
+        <button class="act primary" id="poPosaljiBtn" onclick="posaljiKnjigovodji()">Pošalji</button>
+        <button class="act ghost" onclick="zatvoriPosalji()">Otkaži</button>
+      </div>
+      <div id="poStatus" class="status"></div>
+    </div>
+
+    <!-- SKENER -->
+    <div class="card hidden" id="skenCard">
+      <h3>Skeniraj račun</h3>
+      <div class="small" style="color:var(--muted);margin-bottom:10px">Usmeri kameru na QR kod na dnu računa.</div>
+      <div style="position:relative;border-radius:12px;overflow:hidden;background:#000;width:100%;max-width:320px;margin:0 auto;aspect-ratio:1">
+        <video id="skenVideo" playsinline muted style="width:100%;height:100%;object-fit:cover;display:block"></video>
+        <div class="sken-okvir"><b></b></div>
+      </div>
+      <div class="small" style="color:var(--muted);margin-top:8px;text-align:center">Stavi samo QR kod u zeleni kvadrat</div>
+      <canvas id="skenCanvas" class="hidden"></canvas>
+      <div id="skenStatus" class="status" style="margin-top:10px"></div>
+      <div class="small" style="color:var(--muted);margin-top:6px">Savet: približi telefon dok QR ne popuni zeleni okvir, drži mirno, dobro osvetli.</div>
+      <div class="buttons" style="margin-top:10px">
+        <button class="act ghost hidden" id="torchBtn" onclick="toggleTorch()" style="flex:1">🔦 Upali svetlo</button>
+      </div>
+      <div class="buttons" style="margin-top:8px">
+        <label class="act ghost" style="flex:1;text-align:center;cursor:pointer;margin:0">
+          <i class="ti ti-photo"></i> Otpremi sliku
+          <input type="file" accept="image/*" id="skenFile" onchange="skenIzFajla(event)" style="display:none">
+        </label>
+      </div>
+      <div class="small" style="color:var(--muted);margin-top:12px">Ako kamera ne uspe — nalepi fiskalni link sa računa:</div>
+      <div style="display:flex;gap:8px;margin-top:4px">
+        <input id="skenLink" placeholder="https://suf.purs.gov.rs/v/?vl=..." style="flex:1">
+        <button class="act ghost" style="width:auto;padding:0 14px" onclick="skenIzLinka()">Učitaj</button>
+      </div>
+    </div>
+
+    <!-- PREGLED OČITANOG RAČUNA -->
+    <div class="card hidden" id="racunPregledCard">
+      <div id="rpSaved" class="small" style="color:var(--green-l);font-weight:600;margin-bottom:6px"></div>
+      <div id="rpIznos" style="font-size:34px;font-weight:700;letter-spacing:-.5px;line-height:1.1">—</div>
+      <div id="rpProdavac" style="font-size:14px;font-weight:600;margin-top:4px"></div>
+      <div id="rpMeta" class="small" style="color:var(--muted);margin-top:4px"></div>
+      <div id="rpPib" style="margin-top:10px"></div>
+
+      <button class="act ghost" id="rpEditBtn" style="width:100%;margin-top:12px" onclick="rpToggleEdit()">✎ Ispravi prepoznate podatke</button>
+      <div id="rpEditBox" class="hidden" style="margin-top:8px;padding:10px;background:var(--card2);border:1px solid var(--line);border-radius:12px">
+        <label style="font-size:12px;color:var(--muted2)">Prodavac</label>
+        <input id="rpEditProdavac">
+        <div class="row" style="margin-top:6px">
+          <div><label style="font-size:12px;color:var(--muted2)">Iznos RSD</label><input id="rpEditIznos" inputmode="decimal"></div>
+          <div><label style="font-size:12px;color:var(--muted2)">PDV RSD</label><input id="rpEditPdv" inputmode="decimal"></div>
+        </div>
+        <button class="act primary" style="width:100%;margin-top:8px" onclick="racunSacuvajIzmenu()">Sačuvaj ispravku</button>
+      </div>
+
+      <input id="rpNapomena" placeholder="Napomena (neobavezno)" onblur="rpNapomenaBlur()" style="margin-top:12px">
+
+      <button class="act ghost" id="rpTrosakBtn" style="width:100%;margin-top:12px" onclick="rpToggleTrosak()">Trošak</button>
+      <div id="rpKatBox" class="hidden" style="margin-top:8px">
+        <label style="font-size:12px;color:var(--muted2)">Kategorija troška</label>
+        <select id="rpKategorija" onchange="rpKategorijaPromena()" style="margin-top:4px"></select>
+      </div>
+
+      <div id="rpPoslato" class="small" style="margin-top:14px"></div>
+      <div class="buttons" style="margin-top:6px"><button class="act ghost" id="rpPosaljiBtn" style="width:100%" onclick="posaljiJedan()"><i class="ti ti-send"></i> Pošalji knjigovođi</button></div>
+      <div class="buttons" style="margin-top:16px"><button class="act primary" style="width:100%" onclick="skenPonovo()">Skeniraj sledeći</button></div>
+      <div class="buttons" style="margin-top:8px"><button class="act ghost" style="width:100%;color:var(--red-l);border-color:var(--red)!important" onclick="odbaciRacun()">Odbaci</button></div>
+      <div id="rpStatus" class="status"></div>
+    </div>
+
+    <!-- IZMENA REKLAMACIJE -->
+    <div class="card hidden" id="izmenaReklCard">
+      <h3 id="irNaslov">Izmena reklamacije</h3>
+      <div class="small" id="irInfo" style="margin-bottom:10px"></div>
+      <label>Vrsta kvara</label>
+      <select id="ir_vrsta"></select>
+      <label>Opis kvara</label>
+      <textarea id="ir_opis" style="min-height:64px"></textarea>
+      <div class="sec-title" style="margin-top:12px">Koliko nas je koštalo</div>
+      <div class="row">
+        <div><label>Deo RSD</label><input type="text" inputmode="decimal" id="ir_deo"></div>
+        <div><label>Rad RSD</label><input type="text" inputmode="decimal" id="ir_rad"></div>
+      </div>
+      <div class="row">
+        <div><label>Poštarina RSD</label><input type="text" inputmode="decimal" id="ir_postarina"></div>
+        <div><label>Povraćaj kupcu RSD</label><input type="text" inputmode="decimal" id="ir_povracaj"></div>
+      </div>
+      <div id="ir_ukupno" class="eurline" style="display:block"></div>
+      <label>Status</label><select id="ir_status"></select>
+      <label>Napomena</label><input id="ir_napomena">
+      <div class="buttons">
+        <button class="act primary" onclick="sacuvajIzmenuReklamacije()">Sačuvaj izmenu</button>
+        <button class="act ghost" onclick="zatvoriIzmenuReklamacije()">Odustani</button>
+      </div>
+      <div class="buttons" style="margin-top:6px">
+        <button class="act ghost" style="color:var(--red-l);border-color:var(--red)!important;flex:1"
+          onclick="obrisiReklamacijuIzmena()">Obriši ovu reklamaciju</button>
+      </div>
+      <div id="irStatus" class="status"></div>
+    </div>
+
+    <!-- KAPARA (i vlasnik i radnik) -->
+    <div class="card hidden" id="kaparaCard">
+      <h3>Kapara</h3>
+      <div class="small" style="color:var(--muted);margin-bottom:10px">
+        Samo evidencija — ne menja lager ni promet. Kada kupac dođe po robu,
+        unesi prodaju normalno pa obriši kaparu.
+      </div>
+      <label>Artikal</label>
+      <select id="kp_proizvod" onchange="kaparaCenaIzKataloga()"></select>
+      <label>Ime i prezime kupca</label>
+      <input id="kp_kupac" placeholder="npr. Petar Petrović">
+      <div class="row">
+        <div><label>Kapara RSD</label><input type="text" inputmode="decimal" id="kp_kapara"></div>
+        <div><label>Dogovorena cena RSD</label><input type="text" inputmode="decimal" id="kp_cena"></div>
+      </div>
+      <div id="kp_ostatak" class="eurline" style="display:block"></div>
+      <label>Napomena</label>
+      <input id="kp_napomena" placeholder="neobavezno">
+      <div class="buttons">
+        <button class="act primary" onclick="sacuvajKaparu()">Sačuvaj kaparu</button>
+      </div>
+      <div id="kpStatus" class="status"></div>
+      <div class="sec-title" style="margin-top:16px">Aktivne kapare</div>
+      <div id="kpLista"></div>
+    </div>
+
+    <!-- POVRAT ARTIKLA (samo vlasnik) -->
+    <div class="card hidden" id="povratCard">
+      <h3>Povrat artikla</h3>
+      <div class="koraci">
+        <div class="korak aktivan" id="pvK1"><span class="kb">1</span>Izaberi prodaju</div>
+        <div class="korak" id="pvK2"><span class="kb">2</span>Količina i razlog</div>
+        <div class="korak" id="pvK3"><span class="kb">3</span>Vrati na lager</div>
+      </div>
+      <div class="pg-nav">
+        <button class="pg-arrow" onclick="povratMesec(-1)">‹</button>
+        <div id="pvNaslov" class="pg-title">—</div>
+        <button class="pg-arrow" id="pvNext" onclick="povratMesec(1)">›</button>
+      </div>
+      <label>Artikal</label>
+      <select id="pv_proizvod" onchange="ucitajPovratKandidate()"></select>
+      <div id="pvLista" style="margin-top:10px"></div>
+      <div id="pvPotvrda" class="hidden" style="margin-top:10px">
+        <div class="sec-title" id="pvIzabrana">Izabrana prodaja</div>
+        <div class="row">
+          <div><label>Količina za povrat</label><input type="number" id="pv_kolicina" value="1" min="1"></div>
+          <div><label>Razlog</label><input id="pv_razlog" placeholder="neobavezno"></div>
+        </div>
+        <div id="pv_iznos" class="eurline" style="display:block"></div>
+        <div class="buttons">
+          <button class="act primary" onclick="sacuvajPovrat()">Sačuvaj povrat</button>
+          <button class="act ghost" onclick="otkaziPovrat()">Nazad</button>
+        </div>
+      </div>
+      
+      <div id="pvStatus" class="status"></div>
+    </div>
+
+    <!-- PREGLED MESECA (samo vlasnik) -->
+    <div class="card hidden" id="pregledCard" data-owner>
+      <div class="pg-nav">
+        <button class="pg-arrow" onclick="pregledMesec(-1)">‹</button>
+        <select id="pgPeriod" class="pg-period" onchange="pgPeriodPromena()"></select>
+        <button class="pg-arrow" id="pgNext" onclick="pregledMesec(1)">›</button>
+      </div>
+      <div id="pgStatus" class="status"></div>
+      <div id="pgBody" style="display:none">
+        <div class="hero-tile">
+          <div class="lab">Promet</div>
+          <div class="hero-big" id="pgPromet">–</div>
+          <div class="hero-sub" id="pgPrometEur"></div>
+          <div class="chart" id="pgChart"></div>
+        </div>
+        <div class="pg-tiles">
+          <div class="pg-tile"><div class="lab">Prodaje</div><div class="big" id="pgBrProdaja">–</div></div>
+          <div class="pg-tile"><div class="lab">Zarada</div><div class="big" id="pgNeto" style="color:var(--green-l)">–</div><div class="eur" id="pgNetoEur"></div></div>
+        </div>
+        <div class="sec-title">Kako se deli promet</div>
+        <div class="pg-donutwrap" id="pgDonut"></div>
+        <div class="pg-legend" id="pgLegend"></div>
+        <div class="sec-title">Kuda odlazi novac</div>
+        <div id="pgKuda"></div>
+        <div class="kartica-sekcija">
+          <div class="sec-title">Najprodavaniji artikli<span class="small">ovog meseca</span></div>
+          <div id="pgTop"></div>
+        </div>
+        <div class="kartica-sekcija">
+          <div class="sec-title">Po danima<span class="small" id="pgDaniSub"></span></div>
+          <div id="pgDani"></div>
+        </div>
+      </div>
+      
+    </div>
+
+    <div class="card hidden" id="entryCard">
+      <h3>Unos</h3>
+      <label>Izgovori ili napiši</label>
+      <textarea id="rawText" placeholder="Npr. Prodat jedan Hammer 200 za 189000 dinara, gotovina."></textarea>
+      <div class="buttons">
+        <button class="act primary" onclick="analyzeText()">Obradi tekst</button>
+        <button class="act ghost" onclick="closeEntry()">Nazad</button>
+      </div>
+      <div class="small" style="margin-top:8px">Posle oko 2 sekunde tišine snimanje se završava.</div>
+      <div id="status" class="status"></div>
+    </div>
+
+    <div class="card hidden" id="reviewCard">
+      <h3>Proveri unos</h3>
+      <div id="stavkeTabs" class="stabs hidden"></div>
+      <div id="reviewMessage" class="status warn"></div>
+      <div class="row">
+        <div><label>Vrsta</label>
+          <select id="entry_type" onchange="toggleSections()">
+            <option value="sale">Prodaja</option>
+            <option value="complaint">Reklamacija</option>
+            <option value="cost" data-owner>Trošak</option>
+            <option value="purchase" data-owner>Nabavka</option>
+            <option value="adjustment" data-owner>Korekcija lagera</option>
+            <option value="product_update" data-owner>Stanje / cena proizvoda</option>
+          </select>
+        </div>
+        <div><label>Proizvod</label><select id="product_sku"></select></div>
+      </div>
+
+      <div id="saleFields">
+        <div class="row"><div><label>Količina</label><input type="number" id="quantity"></div><div><label>Cena/kom. RSD</label><input type="text" inputmode="decimal" id="unit_sale_price_rsd"></div></div>
+        <div id="eurPreracun" class="eurline"></div>
+        <div class="row"><div><label>Plaćanje</label><select id="payment_method"></select></div>
+        <div><label>Isporuka</label><select id="isporuka">
+          <option value="Licno">Lično preuzimanje</option>
+          <option value="Aks">Aksom (brza pošta)</option>
+        </select></div></div>
+      </div>
+
+      <div id="costFields" class="hidden">
+        <div class="row"><div><label>Kategorija troška</label><select id="cost_category"></select></div><div><label>Iznos RSD</label><input type="text" inputmode="decimal" id="total_amount_rsd"></div></div>
+        <label>Kome je plaćeno</label><input id="supplier">
+      </div>
+
+      <div id="complaintFields" class="hidden">
+        <label>Kategorija kvara</label><select id="complaint_category"></select>
+        <label>Opis</label><textarea id="description" style="min-height:70px"></textarea>
+        <div class="row" data-owner><div><label>Deo RSD</label><input type="text" inputmode="decimal" id="part_cost_rsd"></div><div><label>Rad RSD</label><input type="text" inputmode="decimal" id="labor_cost_rsd"></div></div>
+        <div class="row" data-owner><div><label>Poštarina RSD</label><input type="text" inputmode="decimal" id="shipping_cost_rsd"></div><div><label>Povraćaj kupcu RSD</label><input type="text" inputmode="decimal" id="refund_rsd"></div></div>
+        <div class="row" data-owner><div><label>Ostalo RSD</label><input type="text" inputmode="decimal" id="other_cost_rsd"></div><div><label>Status</label><select id="complaint_status"></select></div></div>
+        <div class="row" data-owner><div><label>Dobavljač refundira?</label><select id="supplier_reimbursed"><option value="">Nepoznato</option><option value="true">Da</option><option value="false">Ne</option></select></div><div><label>Refundirano RSD</label><input type="text" inputmode="decimal" id="supplier_reimbursement_rsd"></div></div>
+      </div>
+
+      <div id="purchaseFields" class="hidden">
+        <div class="row"><div><label>Količina</label><input type="number" id="purchase_quantity"></div><div><label>Cena koštanja/kom. RSD</label><input type="text" inputmode="decimal" id="unit_landed_cost_rsd"></div></div>
+        <div class="row"><div><label>Dobavljač</label><input id="purchase_supplier"></div><div><label>Kontejner / faktura</label><input id="container_invoice"></div></div>
+      </div>
+
+      <div id="adjustmentFields" class="hidden">
+        <div class="row"><div><label>Promena količine (+/-)</label><input type="number" id="quantity_change"></div><div><label>Razlog</label><select id="adjustment_reason"></select></div></div>
+      </div>
+
+      <div id="productUpdateFields" class="hidden">
+        <div class="row"><div><label>Nabavna cena</label><input type="number" step="0.01" id="unit_cost_amount"></div><div><label>Valuta</label><select id="cost_currency"><option>EUR</option><option>RSD</option><option>USD</option></select></div></div>
+        <div class="row"><div><label>Kurs RSD</label><input type="number" step="0.0001" id="exchange_rate_rsd"></div><div><label>Stvarno stanje</label><input type="number" id="stock_on_hand"></div></div>
+        <label>Redovna prodajna cena RSD</label><input type="text" inputmode="decimal" id="default_sale_price_rsd">
+      </div>
+
+      <label>Napomena</label><textarea id="notes" style="min-height:60px"></textarea>
+      <div class="buttons"><button class="act primary" onclick="save()">Potvrdi i sačuvaj</button><button class="act ghost" onclick="hideReview()">Nazad</button></div>
+    </div>
+
+    <div style="text-align:center;margin-top:8px">
+      <button class="link" onclick="resetujDemo()">Resetuj demo</button>
+      &nbsp;·&nbsp;
+      <button class="link" onclick="logout()">Odjavi se</button>
+    </div>
+    <div style="text-align:center;margin-top:10px">
+      <button class="link" onclick="otvoriPomoc()" style="color:var(--green-l)"><i class="ti ti-message-heart"></i> Pomoć i predlozi</button>
+    </div>
+
+    <!-- POMOĆ I PREDLOZI -->
+    <div class="card hidden" id="pomocCard">
+      <h3>Pomoć i predlozi</h3>
+      <div class="small" style="color:var(--muted);margin-bottom:14px">
+        Vaše mišljenje nam znači — svaka poruka stiže direktno nama i čitamo sve.
+      </div>
+      <a class="voice-btn" style="text-decoration:none" href="mailto:predatorkragujevac@gmail.com?subject=STANJE%20%E2%80%94%20predlog%20za%20unapre%C4%91enje">
+        <i class="ti ti-bulb"></i> Predloži unapređenje
+      </a>
+      <a class="voice-btn" style="text-decoration:none" href="mailto:predatorkragujevac@gmail.com?subject=STANJE%20%E2%80%94%20prijava%20gre%C5%A1ke">
+        <i class="ti ti-bug" style="background:rgba(226,75,74,.13);color:var(--red-l)"></i> Prijavi grešku
+      </a>
+      <a class="voice-btn" style="text-decoration:none" href="mailto:predatorkragujevac@gmail.com?subject=STANJE%20%E2%80%94%20utisak">
+        <i class="ti ti-star" style="background:rgba(239,159,39,.13);color:var(--amber-l)"></i> Podeli utisak
+      </a>
+      <div class="small" style="color:var(--muted);text-align:center;margin-top:14px">
+        Ili nam piši direktno: <a href="mailto:predatorkragujevac@gmail.com" style="color:var(--green-l)">predatorkragujevac@gmail.com</a>
+      </div>
+    </div>
+
+  </div>
+</div>
+<script src="/vendor/zbar.js"></script>
+<script src="/vendor/jsQR.js"></script>
+<script src="/demo-backend.js"></script>
+<script src="/app.js"></script>
+</body>
+</html>
