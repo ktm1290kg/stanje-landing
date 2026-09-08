@@ -1,0 +1,43 @@
+/* Dopune uz glavni stil — sve što nova strana dodaje. */
+
+/* Sporedno dugme: isti oblik kao glavno, samo prazno iznutra. */
+.button-ghost { background: transparent; color: var(--green); }
+.button-ghost:hover { background: color-mix(in srgb, var(--green) 12%, transparent); }
+
+/* Panel za kolačiće */
+.cc-backdrop {
+  position: fixed; inset: 0; z-index: 9999;
+  background: rgba(4,6,4,.72);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.cc-panel {
+  background: #0f120f; border: 1px solid #2a2f2a; border-radius: 16px;
+  max-width: 520px; width: 100%; padding: 28px;
+  box-shadow: 0 30px 80px rgba(0,0,0,.55);
+}
+.cc-panel h2 { margin: 10px 0 8px; font-size: 20px; color: #eef1ee; }
+.cc-panel p { margin: 0 0 20px; font-size: 14px; line-height: 1.55; color: #aab0aa; }
+.cc-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--green); display: inline-block; }
+.cc-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.cc-actions button {
+  flex: 1 1 180px; min-height: 46px; border-radius: 9px; cursor: pointer;
+  font-family: inherit; font-size: 13px; font-weight: 700; border: 1px solid #3a413a;
+}
+.cc-yes { background: var(--green); color: #080a08; border-color: var(--green); }
+.cc-no { background: transparent; color: #d8dcd8; }
+.cc-actions button:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
+
+/* Stanje slanja forme */
+.lead-form[data-stanje="salje"] button[type="submit"] { opacity: .6; pointer-events: none; }
+.form-poruka { margin-top: 12px; font-size: 13px; font-weight: 600; }
+.form-poruka.ok { color: var(--green); }
+.form-poruka.greska { color: #ff8f7a; }
+
+@media (prefers-reduced-motion: reduce) {
+  .sale-toast, .scan-dot { animation: none !important; }
+}
+
+/* Dva dugmeta u heroju: ne prelamaju se, a u uskom prelaze u nov red. */
+.hero-actions { flex-wrap: wrap; gap: 14px 20px; }
+.hero-actions .button { white-space: nowrap; }
