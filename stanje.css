@@ -41,3 +41,9 @@
 /* Dva dugmeta u heroju: ne prelamaju se, a u uskom prelaze u nov red. */
 .hero-actions { flex-wrap: wrap; gap: 14px 20px; }
 .hero-actions .button { white-space: nowrap; }
+
+/* Polja forme na telefonu: iOS zumira ekran kad je slovo manje od 16px.
+   Naslednjeno pravilo daje 10px, pa se prijava kucala u zumiranom ekranu. */
+@media (max-width: 900px) {
+  .lead-form input, .lead-form select { font-size: 16px; }
+}

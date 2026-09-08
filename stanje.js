@@ -140,24 +140,40 @@
       var telo = {
         name: String(p.get("name") || "").trim(),
         phone: String(p.get("phone") || "").trim(),
+        email: String(p.get("email") || "").trim(),
         businessType: String(p.get("businessType") || "").trim() || "Nije navedeno",
         teamSize: String(p.get("teamSize") || "").trim() || "Nije navedeno"
       };
+
+      /* Email je obavezan — na njega ide potvrda termina i link za poziv.
+         Pregledač ovo već proverava (type=email required), ali stariji
+         pregledači i automatsko popunjavanje umeju da provuku prazno. */
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(telo.email)) {
+        poruka.className = "form-poruka greska";
+        poruka.textContent = "Unesite ispravnu email adresu — na nju šaljemo potvrdu termina.";
+        forma.dataset.stanje = "";
+        var polje = forma.querySelector('input[name="email"]');
+        if (polje) polje.focus();
+        return;
+      }
 
       fetch("/api/leads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(telo)
       }).then(function (r) {
+        if (r.status === 400) throw new Error("mejl");
         if (!r.ok) throw new Error("status " + r.status);
         poruka.className = "form-poruka ok";
-        poruka.textContent = "Primili smo prijavu. Javljamo se na taj broj.";
+        poruka.textContent = "Primili smo prijavu. Javljamo se na telefon, a potvrdu termina šaljemo na email.";
         forma.reset();
         if (window.fbq) window.fbq("track", "Lead");
         if (window.gtag) window.gtag("event", "generate_lead");
-      }).catch(function () {
+      }).catch(function (e) {
         poruka.className = "form-poruka greska";
-        poruka.textContent = "Prijava nije poslata. Pozovite nas na 063/693-485 ili pokušajte ponovo.";
+        poruka.textContent = String(e && e.message) === "mejl"
+          ? "Email adresa nije ispravna. Proverite je pa pošaljite ponovo."
+          : "Prijava nije poslata. Pozovite nas na 063/693-485 ili pokušajte ponovo.";
       }).finally(function () {
         forma.dataset.stanje = "";
       });
