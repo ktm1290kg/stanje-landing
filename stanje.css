@@ -47,3 +47,30 @@
 @media (max-width: 900px) {
   .lead-form input, .lead-form select { font-size: 16px; }
 }
+
+/* Poruke uz pojedinačno polje prijave.
+   Label je `display:grid`, pa se ovi redovi sami slažu ispod polja. */
+.polje-savet {
+  font-size: 11px; font-weight: 500; line-height: 1.45;
+  color: #7f867f; margin-top: -4px;
+}
+.polje-greska {
+  font-size: 12px; font-weight: 600; line-height: 1.45;
+  color: #ff8f7a; margin-top: -4px;
+}
+.polje-greska[hidden] { display: none; }
+.lead-form input.polje-lose,
+.lead-form select.polje-lose { border-color: #ff8f7a; }
+
+/* „Da li ste mislili ime@gmail.com?" — ponuda, ne prepreka. */
+.polje-predlog {
+  font-size: 12px; font-weight: 600; line-height: 1.45;
+  color: #d8dcd8; margin-top: -4px;
+}
+.polje-predlog[hidden] { display: none; }
+.predlog-dugme {
+  background: transparent; border: 0; padding: 0;
+  font: inherit; color: var(--green); cursor: pointer;
+  text-decoration: underline; text-underline-offset: 3px;
+}
+.predlog-dugme:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }

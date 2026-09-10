@@ -120,20 +120,263 @@
   });
 
   /* ── 5. Prijava za demo ───────────────────────────────────────
-     Šalje se na /api/leads, isto kao i do sada. */
+     Šalje se na /api/leads. SVA POLJA SU OBAVEZNA — prijava bez
+     ispravnog telefona i email adrese ne vredi ništa, jer se čoveku
+     više ne možemo javiti.
+
+     Provere ovde služe da se greška vidi ODMAH, dok je čovek još u
+     polju. Pravi čuvar je server (server/src/lib/kontakt.ts u
+     stanje-finance) — ova forma se može zaobići. Poruke su namerno
+     iste kao serverske, da čovek ne dobije dva različita objašnjenja
+     za istu grešku. */
 
   var forma = document.querySelector(".lead-form");
   if (forma) {
     var poruka = document.createElement("p");
     poruka.className = "form-poruka";
     poruka.setAttribute("role", "status");
-    forma.appendChild(poruka);
+    var dugme = forma.querySelector('button[type="submit"]');
+    forma.insertBefore(poruka, dugme);
+
+    var polja = {
+      name: forma.querySelector('input[name="name"]'),
+      phone: forma.querySelector('input[name="phone"]'),
+      email: forma.querySelector('input[name="email"]'),
+      businessType: forma.querySelector('select[name="businessType"]'),
+      teamSize: forma.querySelector('select[name="teamSize"]')
+    };
+
+    /* ── Poruka ispod jednog polja ─────────────────────────────── */
+
+    function ciljGreske(el) {
+      var post = el.parentNode.querySelector(".polje-greska");
+      if (!post) {
+        post = document.createElement("small");
+        post.className = "polje-greska";
+        el.parentNode.appendChild(post);
+      }
+      return post;
+    }
+
+    function greskaPolja(el, tekst) {
+      if (!el) return;
+      var mesto = ciljGreske(el);
+      mesto.textContent = tekst || "";
+      mesto.hidden = !tekst;
+      el.setAttribute("aria-invalid", tekst ? "true" : "false");
+      el.classList.toggle("polje-lose", !!tekst);
+    }
+
+    function ocistiSve() {
+      poruka.className = "form-poruka";
+      poruka.textContent = "";
+      Object.keys(polja).forEach(function (k) { greskaPolja(polja[k], ""); });
+      sakrijPredlog();
+    }
+
+    /* ── Telefon: cifre se same razdvajaju dok se kuca ──────────
+       Razmaci u „064 123 4567" nisu ukras — grupisan broj se lakše
+       pročita sa papira i lakše se uoči cifra viška ili manjak. */
+
+    function maskaTelefona(el) {
+      var naKraju = el.selectionStart === el.value.length;
+      var v = el.value;
+      /* Strani broj (izričito +, a nije naš) ostavljamo kako je kucan. */
+      if (v.charAt(0) === "+" && v.indexOf("+381") !== 0) return;
+
+      var d = v.replace(/\D/g, "");
+      var nula = v.charAt(0) === "0";
+      if (d.indexOf("00381") === 0) d = d.slice(5);
+      else if (v.indexOf("+381") === 0) d = d.slice(3);
+      else if (d.charAt(0) === "0") d = d.slice(1);
+      else if (d.charAt(0) !== "6" && d !== "") return;  /* ne znamo šta je — ne diraj */
+
+      d = d.slice(0, 9);
+      var t = d === "" ? (nula ? "0" : "") : "0" + d.slice(0, 2);
+      if (d.length > 2) t += " " + d.slice(2, 5);
+      if (d.length > 5) t += " " + d.slice(5);
+      if (t === el.value) return;
+      el.value = t;
+      if (naKraju) el.setSelectionRange(t.length, t.length);
+    }
+
+    if (polja.phone) {
+      polja.phone.addEventListener("input", function () { maskaTelefona(polja.phone); });
+    }
+
+    function proveriTelefon(v) {
+      var sirovo = String(v || "").trim();
+      if (!sirovo) return "Unesite broj telefona.";
+      if (sirovo.charAt(0) === "+" && sirovo.indexOf("+381") !== 0) {
+        return /^\+\d{8,15}$/.test(sirovo.replace(/[\s\/-]/g, ""))
+          ? "" : "Međunarodni broj nema ispravan broj cifara.";
+      }
+      var d = sirovo.replace(/\D/g, "");
+      if (d.indexOf("00381") === 0) d = d.slice(5);
+      else if (d.charAt(0) === "0") d = d.slice(1);
+      else if (d.indexOf("381") === 0) d = d.slice(3);
+      if (/^(\d)\1+$/.test(d)) return "Broj telefona nije ispravan.";
+      if (d.length < 8) return "Broj ima premalo cifara (" + d.length + "). Primer: 064 123 4567.";
+      if (d.length > 9) return "Broj ima previše cifara (" + d.length + "). Primer: 064 123 4567.";
+      if (!/^[1-7]/.test(d)) return "Pozivni broj ne postoji u Srbiji. Primer: 064 123 4567.";
+      return "";
+    }
+
+    /* ── Email: oblik + tiha sumnja na omašku u domenu ───────────
+       Predlog NE zaustavlja slanje — domen udaljen jedno slovo od
+       „gmail.com" može biti nečiji stvaran domen. Zato se nudi, a
+       čovek bira. Ono što stvarno ne postoji odbija server, koji
+       proverava da li domen uopšte prima poštu. */
+
+    var OBLIK_MEJLA = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,18}$/;
+
+    var POZNATI_DOMENI = ["gmail.com", "yahoo.com", "hotmail.com", "outlook.com",
+      "live.com", "icloud.com", "me.com", "proton.me", "protonmail.com", "aol.com",
+      "mts.rs", "eunet.rs", "open.telekom.rs", "sbb.rs", "ptt.rs", "ymail.com"];
+
+    var POZNATI_NASTAVCI = ["com", "net", "org", "info", "biz", "io", "co", "me",
+      "eu", "dev", "app", "rs", "ba", "hr", "mk", "si", "bg", "de", "at", "ch",
+      "it", "fr", "uk", "us", "ru", "edu", "gov", "shop", "online", "store"];
+
+    /* Razmak izmene koji ZAMENU SUSEDNIH SLOVA broji kao jednu grešku —
+       „gmial.com" je najčešća omaška pri brzom kucanju. */
+    function razmak(a, b, granica) {
+      if (Math.abs(a.length - b.length) > granica) return granica + 1;
+      var preth = [], red = [], i, j;
+      for (j = 0; j <= b.length; j++) red.push(j);
+      for (i = 1; i <= a.length; i++) {
+        var novi = [i], najmanji = i;
+        for (j = 1; j <= b.length; j++) {
+          var c = Math.min(red[j] + 1, novi[j - 1] + 1,
+            red[j - 1] + (a.charAt(i - 1) === b.charAt(j - 1) ? 0 : 1));
+          if (i > 1 && j > 1 && a.charAt(i - 1) === b.charAt(j - 2) &&
+              a.charAt(i - 2) === b.charAt(j - 1)) {
+            c = Math.min(c, preth[j - 2] + 1);
+          }
+          novi.push(c);
+          if (c < najmanji) najmanji = c;
+        }
+        if (najmanji > granica) return granica + 1;
+        preth = red; red = novi;
+      }
+      return red[b.length];
+    }
+
+    function predlogZaDomen(domen) {
+      var d = String(domen).toLowerCase(), i;
+      if (POZNATI_DOMENI.indexOf(d) >= 0) return null;
+      for (i = 0; i < POZNATI_DOMENI.length; i++) {
+        if (razmak(d, POZNATI_DOMENI[i], 1) === 1) return POZNATI_DOMENI[i];
+      }
+      var tacka = d.lastIndexOf(".");
+      if (tacka < 1) return null;
+      var nastavak = d.slice(tacka + 1);
+      if (POZNATI_NASTAVCI.indexOf(nastavak) >= 0) return null;
+      for (i = 0; i < POZNATI_NASTAVCI.length; i++) {
+        if (razmak(nastavak, POZNATI_NASTAVCI[i], 1) === 1) {
+          return d.slice(0, tacka + 1) + POZNATI_NASTAVCI[i];
+        }
+      }
+      return null;
+    }
+
+    function proveriMejl(v) {
+      var m = String(v || "").trim();
+      if (!m) return "Unesite email adresu.";
+      if (m.length > 200) return "Email adresa je predugačka.";
+      if (!OBLIK_MEJLA.test(m)) return "Email adresa nije ispravna. Primer: ime@primer.rs";
+      return "";
+    }
+
+    var predlogRed = null;
+
+    function sakrijPredlog() {
+      if (predlogRed) { predlogRed.hidden = true; }
+    }
+
+    function ponudiPredlog() {
+      if (!polja.email) return;
+      sakrijPredlog();
+      var m = polja.email.value.trim().toLowerCase();
+      if (!OBLIK_MEJLA.test(m)) return;
+      var domen = m.slice(m.indexOf("@") + 1);
+      var bolji = predlogZaDomen(domen);
+      if (!bolji) return;
+      var ceo = m.slice(0, m.indexOf("@") + 1) + bolji;
+
+      if (!predlogRed) {
+        predlogRed = document.createElement("small");
+        predlogRed.className = "polje-predlog";
+        polja.email.parentNode.appendChild(predlogRed);
+      }
+      predlogRed.hidden = false;
+      predlogRed.textContent = "Da li ste mislili ";
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "predlog-dugme";
+      b.textContent = ceo;
+      b.addEventListener("click", function () {
+        polja.email.value = ceo;
+        sakrijPredlog();
+        greskaPolja(polja.email, "");
+        polja.email.focus();
+      });
+      predlogRed.appendChild(b);
+      predlogRed.appendChild(document.createTextNode(" ?"));
+    }
+
+    if (polja.email) {
+      polja.email.addEventListener("blur", ponudiPredlog);
+      polja.email.addEventListener("input", sakrijPredlog);
+    }
+
+    /* ── Provera pri izlasku iz polja ───────────────────────────── */
+
+    function proveriPolje(kljuc) {
+      var el = polja[kljuc];
+      if (!el) return "";
+      var v = String(el.value || "").trim();
+      var g = "";
+      if (kljuc === "name") {
+        var slova = v.replace(/[^A-Za-zČĆĐŠŽčćđšžА-Яа-яЂЈЉЊЋЏђјљњћџ]/g, "").length;
+        g = !v ? "Unesite ime i prezime." : (slova < 2 ? "Ime i prezime nisu ispravni." : "");
+      } else if (kljuc === "phone") g = proveriTelefon(v);
+      else if (kljuc === "email") g = proveriMejl(v);
+      else if (kljuc === "businessType") g = v ? "" : "Izaberite vrstu posla.";
+      else if (kljuc === "teamSize") g = v ? "" : "Izaberite broj zaposlenih.";
+      greskaPolja(el, g);
+      return g;
+    }
+
+    Object.keys(polja).forEach(function (k) {
+      var el = polja[k];
+      if (!el) return;
+      var dogadjaj = el.tagName === "SELECT" ? "change" : "blur";
+      el.addEventListener(dogadjaj, function () { proveriPolje(k); });
+      /* Kad čovek krene da ispravlja, poruka o grešci smeta — sklanja se. */
+      el.addEventListener("input", function () { greskaPolja(el, ""); });
+    });
+
+    /* ── Slanje ─────────────────────────────────────────────────── */
 
     forma.addEventListener("submit", function (ev) {
       ev.preventDefault();
       if (forma.dataset.stanje === "salje") return;
+      ocistiSve();
+
+      var redosled = ["name", "phone", "email", "businessType", "teamSize"];
+      var prvoLose = null;
+      redosled.forEach(function (k) {
+        if (proveriPolje(k) && !prvoLose) prvoLose = polja[k];
+      });
+      if (prvoLose) {
+        poruka.className = "form-poruka greska";
+        poruka.textContent = "Popunite sva polja — nedostaje ili nije ispravno ono označeno.";
+        prvoLose.focus();
+        return;
+      }
+
       forma.dataset.stanje = "salje";
-      poruka.className = "form-poruka";
       poruka.textContent = "Šaljem…";
 
       var p = new FormData(forma);
@@ -141,39 +384,43 @@
         name: String(p.get("name") || "").trim(),
         phone: String(p.get("phone") || "").trim(),
         email: String(p.get("email") || "").trim(),
-        businessType: String(p.get("businessType") || "").trim() || "Nije navedeno",
-        teamSize: String(p.get("teamSize") || "").trim() || "Nije navedeno"
+        businessType: String(p.get("businessType") || "").trim(),
+        teamSize: String(p.get("teamSize") || "").trim(),
+        /* Mamac za robote: polje je sakriveno, čovek ga nikad ne popuni.
+           Server tiho odbacuje prijavu u kojoj je popunjeno. */
+        website: String(p.get("website") || "").trim()
       };
-
-      /* Email je obavezan — na njega ide potvrda termina i link za poziv.
-         Pregledač ovo već proverava (type=email required), ali stariji
-         pregledači i automatsko popunjavanje umeju da provuku prazno. */
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(telo.email)) {
-        poruka.className = "form-poruka greska";
-        poruka.textContent = "Unesite ispravnu email adresu — na nju šaljemo potvrdu termina.";
-        forma.dataset.stanje = "";
-        var polje = forma.querySelector('input[name="email"]');
-        if (polje) polje.focus();
-        return;
-      }
 
       fetch("/api/leads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(telo)
       }).then(function (r) {
-        if (r.status === 400) throw new Error("mejl");
-        if (!r.ok) throw new Error("status " + r.status);
-        poruka.className = "form-poruka ok";
-        poruka.textContent = "Primili smo prijavu. Javljamo se na telefon, a potvrdu termina šaljemo na email.";
-        forma.reset();
-        if (window.fbq) window.fbq("track", "Lead");
-        if (window.gtag) window.gtag("event", "generate_lead");
+        return r.json().catch(function () { return null; }).then(function (telo) {
+          if (!r.ok) {
+            var e = new Error((telo && telo.message) || "status " + r.status);
+            e.polje = telo && telo.details && telo.details.polje;
+            e.odServera = !!(telo && telo.message);
+            throw e;
+          }
+          poruka.className = "form-poruka ok";
+          poruka.textContent = "Primili smo prijavu. Javljamo se na telefon, " +
+            "a potvrdu termina šaljemo na email.";
+          forma.reset();
+          if (window.fbq) window.fbq("track", "Lead");
+          if (window.gtag) window.gtag("event", "generate_lead");
+        });
       }).catch(function (e) {
         poruka.className = "form-poruka greska";
-        poruka.textContent = String(e && e.message) === "mejl"
-          ? "Email adresa nije ispravna. Proverite je pa pošaljite ponovo."
-          : "Prijava nije poslata. Pozovite nas na 063/693-485 ili pokušajte ponovo.";
+        if (e && e.polje && polja[e.polje]) {
+          /* Server je rekao tačno koje polje ne valja — poruka ide pod njega. */
+          greskaPolja(polja[e.polje], e.message);
+          polja[e.polje].focus();
+          poruka.textContent = "Proverite označeno polje pa pošaljite ponovo.";
+        } else {
+          poruka.textContent = (e && e.odServera && e.message) ||
+            "Prijava nije poslata. Pozovite nas na 063/693-485 ili pokušajte ponovo.";
+        }
       }).finally(function () {
         forma.dataset.stanje = "";
       });
