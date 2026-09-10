@@ -124,14 +124,126 @@
      ispravnog telefona i email adrese ne vredi ništa, jer se čoveku
      više ne možemo javiti.
 
+     Na strani stoje DVE iste forme: jedna odmah ispod početnog ekrana
+     (za onoga ko je već ubeđen) i jedna na dnu (za onoga ko prvo čita
+     sve). Zato je sve ispod napisano da radi za bilo koju formu i
+     poziva se za svaku ponaosob — nema deljenog stanja među njima.
+
      Provere ovde služe da se greška vidi ODMAH, dok je čovek još u
      polju. Pravi čuvar je server (server/src/lib/kontakt.ts u
      stanje-finance) — ova forma se može zaobići. Poruke su namerno
      iste kao serverske, da čovek ne dobije dva različita objašnjenja
      za istu grešku. */
 
-  var forma = document.querySelector(".lead-form");
-  if (forma) {
+  /* ── Zajednička znanja o telefonu i mejlu ────────────────────── */
+
+  function proveriTelefon(v) {
+    var sirovo = String(v || "").trim();
+    if (!sirovo) return "Unesite broj telefona.";
+    if (sirovo.charAt(0) === "+" && sirovo.indexOf("+381") !== 0) {
+      return /^\+\d{8,15}$/.test(sirovo.replace(/[\s\/-]/g, ""))
+        ? "" : "Međunarodni broj nema ispravan broj cifara.";
+    }
+    var d = sirovo.replace(/\D/g, "");
+    if (d.indexOf("00381") === 0) d = d.slice(5);
+    else if (d.charAt(0) === "0") d = d.slice(1);
+    else if (d.indexOf("381") === 0) d = d.slice(3);
+    if (/^(\d)\1+$/.test(d)) return "Broj telefona nije ispravan.";
+    if (d.length < 8) return "Broj ima premalo cifara (" + d.length + "). Primer: 064 123 4567.";
+    if (d.length > 9) return "Broj ima previše cifara (" + d.length + "). Primer: 064 123 4567.";
+    if (!/^[1-7]/.test(d)) return "Pozivni broj ne postoji u Srbiji. Primer: 064 123 4567.";
+    return "";
+  }
+
+  /* Cifre se same razdvajaju dok se kuca. Razmaci u „064 123 4567"
+     nisu ukras — grupisan broj se lakše pročita sa papira i lakše se
+     uoči cifra viška ili manjak. */
+  function maskaTelefona(el) {
+    var naKraju = el.selectionStart === el.value.length;
+    var v = el.value;
+    /* Strani broj (izričito +, a nije naš) ostavljamo kako je kucan. */
+    if (v.charAt(0) === "+" && v.indexOf("+381") !== 0) return;
+
+    var d = v.replace(/\D/g, "");
+    var nula = v.charAt(0) === "0";
+    if (d.indexOf("00381") === 0) d = d.slice(5);
+    else if (v.indexOf("+381") === 0) d = d.slice(3);
+    else if (d.charAt(0) === "0") d = d.slice(1);
+    else if (d.charAt(0) !== "6" && d !== "") return;  /* ne znamo šta je — ne diraj */
+
+    d = d.slice(0, 9);
+    var t = d === "" ? (nula ? "0" : "") : "0" + d.slice(0, 2);
+    if (d.length > 2) t += " " + d.slice(2, 5);
+    if (d.length > 5) t += " " + d.slice(5);
+    if (t === el.value) return;
+    el.value = t;
+    if (naKraju) el.setSelectionRange(t.length, t.length);
+  }
+
+  var OBLIK_MEJLA = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,18}$/;
+
+  var POZNATI_DOMENI = ["gmail.com", "yahoo.com", "hotmail.com", "outlook.com",
+    "live.com", "icloud.com", "me.com", "proton.me", "protonmail.com", "aol.com",
+    "mts.rs", "eunet.rs", "open.telekom.rs", "sbb.rs", "ptt.rs", "ymail.com"];
+
+  var POZNATI_NASTAVCI = ["com", "net", "org", "info", "biz", "io", "co", "me",
+    "eu", "dev", "app", "rs", "ba", "hr", "mk", "si", "bg", "de", "at", "ch",
+    "it", "fr", "uk", "us", "ru", "edu", "gov", "shop", "online", "store"];
+
+  /* Razmak izmene koji ZAMENU SUSEDNIH SLOVA broji kao jednu grešku —
+     „gmial.com" je najčešća omaška pri brzom kucanju, a obican
+     Levenštajn je vidi kao dve izmene pa bi prošla neopaženo. */
+  function razmak(a, b, granica) {
+    if (Math.abs(a.length - b.length) > granica) return granica + 1;
+    var preth = [], red = [], i, j;
+    for (j = 0; j <= b.length; j++) red.push(j);
+    for (i = 1; i <= a.length; i++) {
+      var novi = [i], najmanji = i;
+      for (j = 1; j <= b.length; j++) {
+        var c = Math.min(red[j] + 1, novi[j - 1] + 1,
+          red[j - 1] + (a.charAt(i - 1) === b.charAt(j - 1) ? 0 : 1));
+        if (i > 1 && j > 1 && a.charAt(i - 1) === b.charAt(j - 2) &&
+            a.charAt(i - 2) === b.charAt(j - 1)) {
+          c = Math.min(c, preth[j - 2] + 1);
+        }
+        novi.push(c);
+        if (c < najmanji) najmanji = c;
+      }
+      if (najmanji > granica) return granica + 1;
+      preth = red; red = novi;
+    }
+    return red[b.length];
+  }
+
+  function predlogZaDomen(domen) {
+    var d = String(domen).toLowerCase(), i;
+    if (POZNATI_DOMENI.indexOf(d) >= 0) return null;
+    for (i = 0; i < POZNATI_DOMENI.length; i++) {
+      if (razmak(d, POZNATI_DOMENI[i], 1) === 1) return POZNATI_DOMENI[i];
+    }
+    var tacka = d.lastIndexOf(".");
+    if (tacka < 1) return null;
+    var nastavak = d.slice(tacka + 1);
+    if (POZNATI_NASTAVCI.indexOf(nastavak) >= 0) return null;
+    for (i = 0; i < POZNATI_NASTAVCI.length; i++) {
+      if (razmak(nastavak, POZNATI_NASTAVCI[i], 1) === 1) {
+        return d.slice(0, tacka + 1) + POZNATI_NASTAVCI[i];
+      }
+    }
+    return null;
+  }
+
+  function proveriMejl(v) {
+    var m = String(v || "").trim();
+    if (!m) return "Unesite email adresu.";
+    if (m.length > 200) return "Email adresa je predugačka.";
+    if (!OBLIK_MEJLA.test(m)) return "Email adresa nije ispravna. Primer: ime@primer.rs";
+    return "";
+  }
+
+  /* ── Jedna forma ─────────────────────────────────────────────── */
+
+  function postaviFormu(forma) {
     var poruka = document.createElement("p");
     poruka.className = "form-poruka";
     poruka.setAttribute("role", "status");
@@ -146,7 +258,7 @@
       teamSize: forma.querySelector('select[name="teamSize"]')
     };
 
-    /* ── Poruka ispod jednog polja ─────────────────────────────── */
+    /* ── Poruka ispod jednog polja ───────────────────────────── */
 
     function ciljGreske(el) {
       var post = el.parentNode.querySelector(".polje-greska");
@@ -167,6 +279,12 @@
       el.classList.toggle("polje-lose", !!tekst);
     }
 
+    var predlogRed = null;
+
+    function sakrijPredlog() {
+      if (predlogRed) predlogRed.hidden = true;
+    }
+
     function ocistiSve() {
       poruka.className = "form-poruka";
       poruka.textContent = "";
@@ -174,125 +292,15 @@
       sakrijPredlog();
     }
 
-    /* ── Telefon: cifre se same razdvajaju dok se kuca ──────────
-       Razmaci u „064 123 4567" nisu ukras — grupisan broj se lakše
-       pročita sa papira i lakše se uoči cifra viška ili manjak. */
-
-    function maskaTelefona(el) {
-      var naKraju = el.selectionStart === el.value.length;
-      var v = el.value;
-      /* Strani broj (izričito +, a nije naš) ostavljamo kako je kucan. */
-      if (v.charAt(0) === "+" && v.indexOf("+381") !== 0) return;
-
-      var d = v.replace(/\D/g, "");
-      var nula = v.charAt(0) === "0";
-      if (d.indexOf("00381") === 0) d = d.slice(5);
-      else if (v.indexOf("+381") === 0) d = d.slice(3);
-      else if (d.charAt(0) === "0") d = d.slice(1);
-      else if (d.charAt(0) !== "6" && d !== "") return;  /* ne znamo šta je — ne diraj */
-
-      d = d.slice(0, 9);
-      var t = d === "" ? (nula ? "0" : "") : "0" + d.slice(0, 2);
-      if (d.length > 2) t += " " + d.slice(2, 5);
-      if (d.length > 5) t += " " + d.slice(5);
-      if (t === el.value) return;
-      el.value = t;
-      if (naKraju) el.setSelectionRange(t.length, t.length);
-    }
-
     if (polja.phone) {
       polja.phone.addEventListener("input", function () { maskaTelefona(polja.phone); });
     }
 
-    function proveriTelefon(v) {
-      var sirovo = String(v || "").trim();
-      if (!sirovo) return "Unesite broj telefona.";
-      if (sirovo.charAt(0) === "+" && sirovo.indexOf("+381") !== 0) {
-        return /^\+\d{8,15}$/.test(sirovo.replace(/[\s\/-]/g, ""))
-          ? "" : "Međunarodni broj nema ispravan broj cifara.";
-      }
-      var d = sirovo.replace(/\D/g, "");
-      if (d.indexOf("00381") === 0) d = d.slice(5);
-      else if (d.charAt(0) === "0") d = d.slice(1);
-      else if (d.indexOf("381") === 0) d = d.slice(3);
-      if (/^(\d)\1+$/.test(d)) return "Broj telefona nije ispravan.";
-      if (d.length < 8) return "Broj ima premalo cifara (" + d.length + "). Primer: 064 123 4567.";
-      if (d.length > 9) return "Broj ima previše cifara (" + d.length + "). Primer: 064 123 4567.";
-      if (!/^[1-7]/.test(d)) return "Pozivni broj ne postoji u Srbiji. Primer: 064 123 4567.";
-      return "";
-    }
-
-    /* ── Email: oblik + tiha sumnja na omašku u domenu ───────────
+    /* ── Tiha sumnja na omašku u domenu ──────────────────────────
        Predlog NE zaustavlja slanje — domen udaljen jedno slovo od
        „gmail.com" može biti nečiji stvaran domen. Zato se nudi, a
        čovek bira. Ono što stvarno ne postoji odbija server, koji
        proverava da li domen uopšte prima poštu. */
-
-    var OBLIK_MEJLA = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,18}$/;
-
-    var POZNATI_DOMENI = ["gmail.com", "yahoo.com", "hotmail.com", "outlook.com",
-      "live.com", "icloud.com", "me.com", "proton.me", "protonmail.com", "aol.com",
-      "mts.rs", "eunet.rs", "open.telekom.rs", "sbb.rs", "ptt.rs", "ymail.com"];
-
-    var POZNATI_NASTAVCI = ["com", "net", "org", "info", "biz", "io", "co", "me",
-      "eu", "dev", "app", "rs", "ba", "hr", "mk", "si", "bg", "de", "at", "ch",
-      "it", "fr", "uk", "us", "ru", "edu", "gov", "shop", "online", "store"];
-
-    /* Razmak izmene koji ZAMENU SUSEDNIH SLOVA broji kao jednu grešku —
-       „gmial.com" je najčešća omaška pri brzom kucanju. */
-    function razmak(a, b, granica) {
-      if (Math.abs(a.length - b.length) > granica) return granica + 1;
-      var preth = [], red = [], i, j;
-      for (j = 0; j <= b.length; j++) red.push(j);
-      for (i = 1; i <= a.length; i++) {
-        var novi = [i], najmanji = i;
-        for (j = 1; j <= b.length; j++) {
-          var c = Math.min(red[j] + 1, novi[j - 1] + 1,
-            red[j - 1] + (a.charAt(i - 1) === b.charAt(j - 1) ? 0 : 1));
-          if (i > 1 && j > 1 && a.charAt(i - 1) === b.charAt(j - 2) &&
-              a.charAt(i - 2) === b.charAt(j - 1)) {
-            c = Math.min(c, preth[j - 2] + 1);
-          }
-          novi.push(c);
-          if (c < najmanji) najmanji = c;
-        }
-        if (najmanji > granica) return granica + 1;
-        preth = red; red = novi;
-      }
-      return red[b.length];
-    }
-
-    function predlogZaDomen(domen) {
-      var d = String(domen).toLowerCase(), i;
-      if (POZNATI_DOMENI.indexOf(d) >= 0) return null;
-      for (i = 0; i < POZNATI_DOMENI.length; i++) {
-        if (razmak(d, POZNATI_DOMENI[i], 1) === 1) return POZNATI_DOMENI[i];
-      }
-      var tacka = d.lastIndexOf(".");
-      if (tacka < 1) return null;
-      var nastavak = d.slice(tacka + 1);
-      if (POZNATI_NASTAVCI.indexOf(nastavak) >= 0) return null;
-      for (i = 0; i < POZNATI_NASTAVCI.length; i++) {
-        if (razmak(nastavak, POZNATI_NASTAVCI[i], 1) === 1) {
-          return d.slice(0, tacka + 1) + POZNATI_NASTAVCI[i];
-        }
-      }
-      return null;
-    }
-
-    function proveriMejl(v) {
-      var m = String(v || "").trim();
-      if (!m) return "Unesite email adresu.";
-      if (m.length > 200) return "Email adresa je predugačka.";
-      if (!OBLIK_MEJLA.test(m)) return "Email adresa nije ispravna. Primer: ime@primer.rs";
-      return "";
-    }
-
-    var predlogRed = null;
-
-    function sakrijPredlog() {
-      if (predlogRed) { predlogRed.hidden = true; }
-    }
 
     function ponudiPredlog() {
       if (!polja.email) return;
@@ -330,7 +338,7 @@
       polja.email.addEventListener("input", sakrijPredlog);
     }
 
-    /* ── Provera pri izlasku iz polja ───────────────────────────── */
+    /* ── Provera pri izlasku iz polja ────────────────────────── */
 
     function proveriPolje(kljuc) {
       var el = polja[kljuc];
@@ -357,7 +365,7 @@
       el.addEventListener("input", function () { greskaPolja(el, ""); });
     });
 
-    /* ── Slanje ─────────────────────────────────────────────────── */
+    /* ── Slanje ──────────────────────────────────────────────── */
 
     forma.addEventListener("submit", function (ev) {
       ev.preventDefault();
@@ -396,11 +404,11 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(telo)
       }).then(function (r) {
-        return r.json().catch(function () { return null; }).then(function (telo) {
+        return r.json().catch(function () { return null; }).then(function (odgovor) {
           if (!r.ok) {
-            var e = new Error((telo && telo.message) || "status " + r.status);
-            e.polje = telo && telo.details && telo.details.polje;
-            e.odServera = !!(telo && telo.message);
+            var e = new Error((odgovor && odgovor.message) || "status " + r.status);
+            e.polje = odgovor && odgovor.details && odgovor.details.polje;
+            e.odServera = !!(odgovor && odgovor.message);
             throw e;
           }
           poruka.className = "form-poruka ok";
@@ -426,4 +434,6 @@
       });
     });
   }
+
+  Array.prototype.forEach.call(document.querySelectorAll(".lead-form"), postaviFormu);
 })();

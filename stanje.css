@@ -42,12 +42,6 @@
 .hero-actions { flex-wrap: wrap; gap: 14px 20px; }
 .hero-actions .button { white-space: nowrap; }
 
-/* Polja forme na telefonu: iOS zumira ekran kad je slovo manje od 16px.
-   Naslednjeno pravilo daje 10px, pa se prijava kucala u zumiranom ekranu. */
-@media (max-width: 900px) {
-  .lead-form input, .lead-form select { font-size: 16px; }
-}
-
 /* Poruke uz pojedinačno polje prijave.
    Label je `display:grid`, pa se ovi redovi sami slažu ispod polja. */
 .polje-savet {
@@ -74,3 +68,76 @@
   text-decoration: underline; text-underline-offset: 3px;
 }
 .predlog-dugme:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
+
+/* ═══ Prijava za demo: krupnije i vidljivije ════════════════════
+   Forma sada stoji i odmah ispod početnog ekrana (#demo) i na dnu
+   (#demo-dno). Nasleđene veličine su bile skrojene za sporednu
+   sekciju na dnu strane; kad je forma glavna stvar, sve mora da se
+   čita bez naprezanja i na telefonu i na računaru. */
+
+.lead-form label {
+  font-size: 15px;
+  gap: 12px;
+  margin-bottom: 22px;
+  color: #c2c8c2;
+}
+.lead-form input,
+.lead-form select {
+  height: 62px;
+  padding-inline: 20px;
+  font-size: 18px;
+  border-radius: 10px;
+}
+.lead-form input::placeholder { font-size: 17px; }
+
+.form-header strong { font-size: 23px; margin-bottom: 6px; }
+.form-header small { font-size: 14px; line-height: 1.5; }
+
+.lead-form .submit-button {
+  min-height: 66px;
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: .6px;
+  border-radius: 12px;
+  margin-top: 8px;
+}
+.privacy-note { font-size: 13px; }
+
+/* Poruke uz polje prate uvećanje, inače se izgube ispod krupnog polja. */
+.polje-savet { font-size: 13px; }
+.polje-greska, .polje-predlog { font-size: 14px; }
+.form-poruka { font-size: 15px; }
+
+/* Gornja forma je odmah ispod početnog ekrana — bez dvostruke linije
+   i sa nešto manjim razmakom, da se vidi da pripada vrhu strane. */
+.demo-vrh { border-top: 0; }
+
+/* ═══ Jarko dugme u početnom ekranu ════════════════════════════
+   Ne šalje prijavu — spušta čoveka na formu. Zato drugačiji tekst
+   od dugmeta na formi, da se dve radnje ne mešaju. */
+
+.hero-actions .button-poziv {
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: .8px;
+  min-height: 68px;
+  padding-inline: 34px;
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--green) 55%, transparent);
+  animation: poziv-kucanje 2.6s ease-out infinite;
+}
+@keyframes poziv-kucanje {
+  0%   { box-shadow: 0 0 0 0 color-mix(in srgb, var(--green) 45%, transparent); }
+  70%  { box-shadow: 0 0 0 16px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .button-poziv { animation: none; }
+}
+
+/* Na telefonu polja ostaju bar 16px — ispod toga iOS zumira ekran. */
+@media (max-width: 900px) {
+  .lead-form input, .lead-form select { font-size: 17px; height: 58px; }
+  .lead-form label { font-size: 14px; }
+  .form-header strong { font-size: 20px; }
+  .hero-actions .button-poziv { font-size: 17px; min-height: 62px; letter-spacing: .5px; }
+}
